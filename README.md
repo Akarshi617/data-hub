@@ -11,7 +11,7 @@ I also built a small API console UI (`public/index.html`) so you can test the en
 ## 🔗 Live Demo
 
 > Add your deployed link here once it's live, e.g:
-> **https://data-hub-akarshi.onrender.com**
+> **https://data-hub-amber.vercel.app/**
 
 ---
 
