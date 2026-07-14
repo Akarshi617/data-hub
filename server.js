@@ -8,8 +8,8 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 
 const app = express();
-const PORT = 5001;
-const JWT_SECRET = "sprint09-secret-key"; // demo only, never hardcode in real apps
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || "sprint09-secret-key"; // demo only, never hardcode in real apps
 
 // Parse incoming JSON bodies (needed for POST/PUT)
 app.use(express.json());
@@ -34,6 +34,29 @@ let blogs = []; // empty array acting as our mock DB
 let nextId = 1; // simple auto-increment id
 
 // ----------------------------------------
+// Helper functions (avoid repeating logic across routes)
+// ----------------------------------------
+
+// Validates blog payload before create/update
+function validateBlogInput(title, content) {
+  if (!title || !content) {
+    return "Title and content are required";
+  }
+  return null;
+}
+
+// Parses and validates a numeric :id param, returns null if invalid
+function parseBlogId(rawId) {
+  const id = parseInt(rawId);
+  return isNaN(id) ? null : id;
+}
+
+// Finds a blog by id, or undefined if not found
+function findBlogById(id) {
+  return blogs.find((b) => b.id === id);
+}
+
+// ----------------------------------------
 // PHASE 1 + 2: Blog CRUD Endpoints
 // ----------------------------------------
 
@@ -49,10 +72,16 @@ app.get("/api/blogs", (req, res) => {
 
 // GET single blog by id
 app.get("/api/blogs/:id", (req, res) => {
-  const blog = blogs.find((b) => b.id === parseInt(req.params.id));
+  const id = parseBlogId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ success: false, message: "Invalid ID format" });
+  }
+
+  const blog = findBlogById(id);
   if (!blog) {
     return res.status(404).json({ success: false, message: "Blog not found" });
   }
+
   res.json({ success: true, data: blog });
 });
 
@@ -60,11 +89,9 @@ app.get("/api/blogs/:id", (req, res) => {
 app.post("/api/blogs", (req, res) => {
   const { title, content, author } = req.body;
 
-  if (!title || !content) {
-    return res.status(400).json({
-      success: false,
-      message: "Title and content are required",
-    });
+  const validationError = validateBlogInput(title, content);
+  if (validationError) {
+    return res.status(400).json({ success: false, message: validationError });
   }
 
   const newBlog = {
@@ -81,7 +108,12 @@ app.post("/api/blogs", (req, res) => {
 
 // PUT — update an existing blog
 app.put("/api/blogs/:id", (req, res) => {
-  const blog = blogs.find((b) => b.id === parseInt(req.params.id));
+  const id = parseBlogId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ success: false, message: "Invalid ID format" });
+  }
+
+  const blog = findBlogById(id);
   if (!blog) {
     return res.status(404).json({ success: false, message: "Blog not found" });
   }
@@ -97,15 +129,18 @@ app.put("/api/blogs/:id", (req, res) => {
 
 // DELETE — remove a blog (filter from array)
 app.delete("/api/blogs/:id", (req, res) => {
-  const idToDelete = parseInt(req.params.id);
-  const exists = blogs.some((b) => b.id === idToDelete);
+  const id = parseBlogId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ success: false, message: "Invalid ID format" });
+  }
 
+  const exists = blogs.some((b) => b.id === id);
   if (!exists) {
     return res.status(404).json({ success: false, message: "Blog not found" });
   }
 
-  blogs = blogs.filter((b) => b.id !== idToDelete);
-  res.json({ success: true, message: `Blog ${idToDelete} deleted` });
+  blogs = blogs.filter((b) => b.id !== id);
+  res.json({ success: true, message: `Blog ${id} deleted` });
 });
 
 // ----------------------------------------
@@ -134,6 +169,22 @@ app.post("/api/login", (req, res) => {
     message: "Login successful (mock)",
     token,
   });
+});
+
+// ----------------------------------------
+// Fallback 404 handler — for any route not matched above
+// ----------------------------------------
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route not found" });
+});
+
+// ----------------------------------------
+// Centralized error handler — catches unexpected crashes
+// and returns clean JSON instead of an HTML error page
+// ----------------------------------------
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ success: false, message: "Something went wrong" });
 });
 
 // ----------------------------------------
