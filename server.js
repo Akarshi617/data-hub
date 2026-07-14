@@ -135,6 +135,10 @@ app.post("/api/login", (req, res) => {
 // ----------------------------------------
 // Start Server
 // ----------------------------------------
-app.listen(PORT, () => {
-  console.log(`🚀 The Data Hub API is running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 The Data Hub API is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
