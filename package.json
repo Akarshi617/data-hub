@@ -1,13 +1,14 @@
 {
   "name": "data-hub",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "RESTful API server for The Data Hub — Sprint 09, Track B (Fullstack)",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["express", "rest-api", "nodejs"],
+  "author": "Akarshi Agrahari",
   "license": "ISC",
   "dependencies": {
     "express": "^5.2.1",
