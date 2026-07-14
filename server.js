@@ -5,6 +5,7 @@
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 const app = express();
 const PORT = 5001;
@@ -12,6 +13,9 @@ const JWT_SECRET = "sprint09-secret-key"; // demo only, never hardcode in real a
 
 // Parse incoming JSON bodies (needed for POST/PUT)
 app.use(express.json());
+
+// Serve the API Console UI from the public folder
+app.use(express.static(path.join(__dirname, "public")));
 
 // ----------------------------------------
 // PHASE 3: Middleware Engineering
@@ -33,8 +37,8 @@ let nextId = 1; // simple auto-increment id
 // PHASE 1 + 2: Blog CRUD Endpoints
 // ----------------------------------------
 
-// Root route — sanity check
-app.get("/", (req, res) => {
+// Health check — moved off root since root now serves the UI
+app.get("/api/health", (req, res) => {
   res.json({ message: "Welcome to The Data Hub API. Server is running." });
 });
 
