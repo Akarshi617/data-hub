@@ -13,6 +13,7 @@
     --text: #e6e8eb;
     --text-dim: #8a919c;
     --accent: #4fd1a5;
+    --error: #ff6b6b;
     --get: #4fa1ff;
     --post: #4fd1a5;
     --put: #ffb454;
@@ -125,8 +126,13 @@
     font-size: 13px;
     cursor: pointer;
     margin-bottom: 20px;
+    transition: opacity 0.15s ease;
   }
-  button.send:hover { opacity: 0.9; }
+  button.send:hover:not(:disabled) { opacity: 0.9; }
+  button.send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   .console {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -221,8 +227,14 @@
       const input = document.createElement("input");
       input.placeholder = f;
       input.id = "field-" + f;
+      input.setAttribute("aria-label", f);
       fieldsEl.appendChild(input);
     });
+
+    // Enter key sends the request from any field
+    fieldsEl.onkeydown = (e) => {
+      if (e.key === "Enter") document.getElementById("send-btn").click();
+    };
   }
 
   function val(f) {
@@ -231,17 +243,25 @@
   }
 
   function showResponse(status, body) {
-    document.getElementById("response-out").textContent =
-      "// status: " + status + "\n" + JSON.stringify(body, null, 2);
+    const out = document.getElementById("response-out");
+    const isError = (typeof status === "number" && status >= 400) || status === "error";
+    out.style.color = isError ? "#ff8a8a" : "#9fe6c4";
+    out.textContent = "// status: " + status + "\n" + JSON.stringify(body, null, 2);
   }
 
   document.getElementById("send-btn").onclick = async () => {
     const ep = endpoints[activeIdx];
+    const btn = document.getElementById("send-btn");
     let url = BASE_URL + ep.path;
     let options = { method: ep.method, headers: { "Content-Type": "application/json" } };
 
     if (ep.path.includes(":id")) {
-      url = url.replace(":id", val("id") || "");
+      const idVal = val("id");
+      if (!idVal) {
+        showResponse("error", { success: false, message: "ID field is required" });
+        return;
+      }
+      url = url.replace(":id", idVal);
     }
 
     if (ep.method === "POST" || ep.method === "PUT") {
@@ -252,6 +272,8 @@
       options.body = JSON.stringify(body);
     }
 
+    btn.disabled = true;
+    btn.textContent = "Sending...";
     showResponse("...", { message: "sending request" });
 
     try {
@@ -260,6 +282,9 @@
       showResponse(res.status, data);
     } catch (err) {
       showResponse("error", { success: false, message: err.message });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Send request →";
     }
   };
 
